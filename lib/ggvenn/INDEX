@@ -1,0 +1,4 @@
+geom_venn               Plot venn diagram as a ggplot layer object. It
+                        supports only data frame as input.
+ggvenn                  Plot venn diagram as an independent function.
+                        It supports both data frame and list as input.
