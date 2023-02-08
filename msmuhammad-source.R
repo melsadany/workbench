@@ -1,7 +1,8 @@
 ####################################################################################
 #                            main source file for Muhammad                         #
 ####################################################################################
-
+# source this file like this:
+# source("https://raw.githubusercontent.com/melsadany/workbench/master/msmuhammad-source.R", local = T)
 
 # library(lifecycle, lib.loc = "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/test2/lib/R/library")
 set.seed(123)
@@ -13,7 +14,7 @@ library(ggrepel)
 library(RColorBrewer)
 
 
-# lib.location <- "https://github.com/melsadany/workbench/tree/master/lib"
+# lib.location <- "//raw.githubusercontent.com/melsadany/workbench/tree/master/lib"
 # library(ggpubr, lib.loc = lib.location)
 # projects.dir <- "/Dedicated/jmichaelson-wdata/msmuhammad/projects"
 # library(ggstatsplot, lib.loc = lib.location)
