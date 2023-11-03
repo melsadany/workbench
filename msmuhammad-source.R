@@ -72,7 +72,9 @@ my.guides <- guides(fill = guide_colorbar(barwidth = 6, barheight = 0.5))
 boxplot.colors <- c("#aaf0d1", "#b39eb5")
 build.directory <- "mkdir -p archive; mkdir -p logs; mkdir -p figs"
 redblu.col <-  c("#ff6961", "#89cff0")
+redblack.col <- c("#800000", "black")
 six.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", "#73937e")
+
 ####################################################################################
 quantile_normalization <- function(df){
   df_rank <- apply(df,2,rank,ties.method="min")
@@ -117,11 +119,11 @@ psave <- function(...,file){
 # It works
 pdsload <- function(fname,envir=.GlobalEnv){
   con <- pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -d <",fname),"rb")
-  return(readRDS(con)); close(con)
+  return(readRDS(con))
 }
 pdssave <- function(...,file){  
   con = pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
-  saveRDS(...,file=con); close(con) 
+  saveRDS(...,file=con)
 } 
 
 pload_multi <- function(fname,envir=.GlobalEnv, type = "rda"){
@@ -169,6 +171,7 @@ corr.table <- function(x, y, method = "pearson") {
 }
 # ggplot tiles
 redblu.col.gradient <- scale_fill_gradient2(low = redblu.col[2], high = redblu.col[1], name ="ρ")
+redblack.col.gradient <- scale_fill_gradient2(low = redblack.col[2], high = redblack.col[1], name ="ρ")
 null_labs <- labs(x="",y="")
 ####################################################################################
 rho <- "ρ"
