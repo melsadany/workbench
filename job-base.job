@@ -1,0 +1,19 @@
+#! /bin/bash
+#$ -cwd
+#$ -q JM,UI,CCOM
+#$ -pe smp 56
+#$ -N tx-imputation
+#$ -o logs/$JOB_NAME.$TASK_ID.log
+#$ -j y
+#$ -ckpt user
+#$ -l 768G
+#$ -t 1-44
+
+conda activate tximpute2
+
+NUMBER=${TISSUE_LS[$((${SGE_TASK_ID}-1))]}
+ID=${SGE_TASK_ID}
+
+
+RSCRIPT_F=/Dedicated/jmichaelson-wdata/msmuhammad/projects/tx-imputation/02_tx-imputation/01_tx-imputation.R
+Rscript $RSCRIPT_F ${TISSUE} ${PLINK_FILE_PATH} ${OUTPUT_DIR} ${THREADS} ${GENOTYPES_DIR}

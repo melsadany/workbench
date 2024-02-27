@@ -1,0 +1,73 @@
+#!/bin/bash -e
+#===============================================================================
+# Pull columns by name from a file
+# By: Muhammad Elsadany
+# Date: 080922
+#===============================================================================
+
+#I need two inputs: the file path and columns to be pulled 
+
+
+PARAM=$(getopt -o f:c:h --long file-path:,columns:,help -n 'parse-options' -- "$@")
+if [[ $? != 0 ]]; then
+  echo "Failed parsing input parameters" >&2
+  exit 1
+fi
+eval set -- "$PARAM"
+
+# Set default values for function ---------------------------------------------
+HELP=false
+FILE_PATH=
+FIELD=
+
+
+while true; do
+  case "$1" in
+    -h | --help) HELP=true ; shift ;;
+    -c | --columns) FIELD="$2" ; shift 2 ;;
+    -f | --file-path) FILE_PATH="$2" ; shift 2 ;;
+    -- ) shift ; break ;;
+    * ) break ;;
+  esac
+done
+
+
+# Help ------------------------------------------------------------------------
+if [[ "${HELP}" == "true" ]]; then
+  FCN_NAME=($(basename "$0"))
+  echo "Usage: ${FCN_NAME}"
+  echo '  -h | --help              display command help'
+  echo '  -c | --columns           columns names to be extracted'
+  echo '  -f | --file-path         file path to be searched in'
+  echo ''
+  exit 0
+fi
+
+
+
+
+FILE_COLUMNS=($(head ${FILE_PATH} -n 1))
+
+#you may consider having different file formats in the future
+#mainly tsv files
+
+COL=NULL
+for i in "${!FILE_COLUMNS[@]}"; do
+  if [[ "${FILE_COLUMNS[${i}]}" == "${FIELD}" ]]; then
+    COL=${i}
+  fi
+done
+
+if [[ "${COL}" == "NULL" ]]; then
+  echo NULL
+else
+  COL=$((COL+1))
+  cut -d${DELIM} -f${COL} < ${FILE_PATH}
+fi
+
+
+
+#=============================================================================== 
+# End of Function 
+#=============================================================================== 
+exit 0 
