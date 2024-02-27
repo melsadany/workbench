@@ -15,7 +15,7 @@ library(RColorBrewer)
 
 lib.location <- "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/tximpute/lib/R/library"
 # library(ggstatsplot, lib.loc = lib.location)
-library(Hmisc, lib.loc = lib.location)
+# library(Hmisc, lib.loc = lib.location)
 library(lubridate)
 # library(ggpubr, lib.loc = lib.location)
 # library(ggh4x, lib.loc = lib.location)
@@ -74,6 +74,8 @@ build.directory <- "mkdir -p archive; mkdir -p logs; mkdir -p figs"
 redblu.col <-  c("#ff6961", "#89cff0")
 redblack.col <- c("#800000", "black")
 six.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", "#73937e")
+ten.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", 
+                "#73937e", "#06241b", "#b8860b", "#e07c4c", "#9a81b0")
 
 ####################################################################################
 quantile_normalization <- function(df){
