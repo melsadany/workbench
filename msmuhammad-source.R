@@ -2,6 +2,9 @@
 #                            main source file for Muhammad                         #
 ####################################################################################
 
+device <- ifelse(grepl("/LSS/", system("cd &pwd", intern = T)), "IDAS", "argon")
+source(paste0(ifelse(device == "IDAS", "~/LSS", "/Dedicated"),
+              "/jmichaelson-wdata/msmuhammad/workbench/customized-functions/correct_path.R"))
 
 # library(lifecycle, lib.loc = "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/test2/lib/R/library")
 set.seed(123)
@@ -13,7 +16,7 @@ library(ggplot2)
 library(RColorBrewer)
 
 
-lib.location <- "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/tximpute/lib/R/library"
+lib.location <- correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/tximpute/lib/R/library")
 # library(ggstatsplot, lib.loc = lib.location)
 # library(Hmisc, lib.loc = lib.location)
 library(lubridate)
@@ -25,7 +28,26 @@ library(doMC)
 # library(ggExtra)
 hash.sep <- "#######################################################################################"
 
-
+my_theme=theme_minimal() +
+  theme(axis.line = element_line(colour = "black", linewidth = 0.5), 
+        axis.text = element_text(face = "bold"), 
+        axis.text.y = element_text(size = 8),
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 8, vjust = 0.5),
+        axis.ticks = element_blank(), 
+        axis.title = element_text(face = "bold"), 
+        strip.text = element_text(face = "bold"),
+        strip.switch.pad.grid = unit(0, "points"),
+        strip.placement = "outside", 
+        panel.spacing = unit(1, "points"), 
+        panel.grid = element_blank(),
+        legend.position = "bottom", 
+        # legend.title = element_blank(), 
+        legend.text = element_text(face = "bold", size = 5),
+        plot.title = element_text(size = 10),
+        plot.subtitle = element_text(size = 8),
+        title = element_text(face = "bold", size = 10),
+        plot.caption = element_text(hjust = 0)
+  )
 theme_set(theme_minimal() +
             theme(axis.line = element_line(colour = "black", linewidth = 0.5), 
                   axis.text = element_text(face = "bold"), 
@@ -47,27 +69,32 @@ theme_set(theme_minimal() +
                   plot.caption = element_text(hjust = 0)
             ))
 my.guides <- guides(fill = guide_colorbar(barwidth = 6, barheight = 0.5))
-# poster_theme <- theme_set(theme_minimal() +
-#                             theme(axis.line = element_line(colour = "black", size = 0.5), 
-#                                   axis.text = element_text(face = "bold"), 
-#                                   axis.text.y = element_text(size = 14),
-#                                   axis.text.x = element_text(angle = 90, hjust = 1, size = 14, vjust = 0.5),
-#                                   axis.ticks = element_blank(), 
-#                                   axis.title = element_text(face = "bold"), 
-#                                   strip.text = element_text(face = "bold"),
-#                                   strip.switch.pad.grid = unit(0, "points"),
-#                                   strip.placement = "outside", 
-#                                   panel.spacing = unit(1, "points"), 
-#                                   panel.grid = element_blank(),
-#                                   legend.position = "bottom", 
-#                                   # legend.title = element_blank(), 
-#                                   legend.text = element_text(face = "bold", size = 8),
-#                                   plot.title = element_text(size = 14),
-#                                   plot.subtitle = element_text(size = 12),
-#                                   title = element_text(face = "bold", size = 14),
-#                                   plot.caption = element_text(hjust = 0)
-#                             ))
-
+poster_theme <- theme_minimal() +
+  theme(axis.line = element_line(colour = "black", size = 0.5),
+        axis.text = element_text(face = "bold"),
+        axis.text.y = element_text(size = 14),
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 14, vjust = 0.5),
+        axis.ticks = element_blank(),
+        axis.title = element_text(face = "bold"),
+        strip.text = element_text(face = "bold"),
+        strip.switch.pad.grid = unit(0, "points"),
+        strip.placement = "outside",
+        panel.spacing = unit(1, "points"),
+        panel.grid = element_blank(),
+        legend.position = "bottom",
+        # legend.title = element_blank(),
+        legend.text = element_text(face = "bold", size = 8),
+        plot.title = element_text(size = 14),
+        plot.subtitle = element_text(size = 12),
+        title = element_text(face = "bold", size = 14),
+        plot.caption = element_text(hjust = 0)
+        )
+bw.theme <- theme_linedraw() +
+  theme(strip.background = element_rect(fill = "white", color = "white"),
+        strip.text = element_text(color = "black"),
+        legend.position = "bottom",
+        plot.caption = element_text(hjust = 0), 
+        panel.grid = element_blank())
 
 boxplot.colors <- c("#aaf0d1", "#b39eb5")
 build.directory <- "mkdir -p archive; mkdir -p logs; mkdir -p figs"
@@ -76,7 +103,28 @@ redblack.col <- c("#800000", "black")
 six.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", "#73937e")
 ten.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", 
                 "#73937e", "#06241b", "#b8860b", "#e07c4c", "#9a81b0")
-
+antique.colors <- c("#855C75","#D9AF6B","#AF6458","#736F4C","#526A83",
+                    "#625377","#68855C","#9C9C5E","#A06177","#8C785D",
+                    "#467378","#7C7C7C")
+####################################################################################
+# correct_path <- function(file) {
+#   device <- ifelse(grepl("/LSS/", system("cd &pwd", intern = T)), "IDAS", "argon")
+#   if (device == "IDAS") {
+#     if (grepl("wdata", file)) {
+#       f <- sub(".*wdata", "~/LSS/jmichaelson-wdata", file)
+#     }else if (grepl("wdata", file)) {
+#       f <- sub(".*sdata", "~/LSS/jmichaelson-sdata", file)
+#     }
+#   }else {
+#     if (grepl("wdata", file)) {
+#       f <- sub(".*wdata", "/Dedicated/jmichaelson-wdata", file)
+#     } else if (grepl("wdata", file)) {
+#       f <- sub(".*sdata", "/Dedicated/jmichaelson-sdata", file)
+#     }
+#   }
+#   print(f)
+#   return(f)
+# }
 ####################################################################################
 quantile_normalization <- function(df){
   df_rank <- apply(df,2,rank,ties.method="min")
@@ -107,29 +155,32 @@ not_all_na <- function(x) any(!is.na(x))
 not_any_na <- function(x) all(!is.na(x))
 
 ####################################################################################
-
+ggsave2 <- function(file, bg = "white", width = 8, height = 8, units = "in", dpi = 360) {
+  ggsave(filename = file, bg = bg,
+         width = width, height = height, units = units, dpi = dpi)
+}
 ####################################################################################
 pload <- function(fname,envir=.GlobalEnv){
-  con <- pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -d <",fname),"rb")
+  con <- pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz")," -d <",fname),"rb")
   load(con,envir=envir); close(con)
 }
 psave <- function(...,file){  
-  con = pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
+  con = pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz"), " -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
   save(...,file=con,envir=.GlobalEnv); close(con) 
 } 
 
 # It works
 pdsload <- function(fname,envir=.GlobalEnv){
-  con <- pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -d <",fname),"rb")
+  con <- pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz")," -d <",fname),"rb")
   return(readRDS(con))
 }
 pdssave <- function(...,file){  
-  con = pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
+  con = pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz"), " -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
   saveRDS(...,file=con)
 } 
 
 pload_multi <- function(fname,envir=.GlobalEnv, type = "rda"){
-  con <- pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -d <",fname),"rb")
+  con <- pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz"), " -d <",fname),"rb")
   if (type == "rda") {
     load(con,envir=envir); close(con)
   }else if (type == "rds") {
@@ -137,7 +188,7 @@ pload_multi <- function(fname,envir=.GlobalEnv, type = "rda"){
   }
 }
 psave_multi <- function(...,file, type = "rda"){  
-  con = pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
+  con = pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz"), " -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
   if (type == "rda") {
     save(...,file=con,envir=.GlobalEnv); close(con) 
   }else if (type == "rds") {
@@ -146,7 +197,7 @@ psave_multi <- function(...,file, type = "rda"){
 }
 
 psave.image <- function(file){ 
-  con = pipe(paste("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
+  con = pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz"), " -2 -q 80 -f 3 > ",file,".pxz",sep=""),"wb") 
   save(list = names(.GlobalEnv),file=con,envir=.GlobalEnv); close(con) 
 } 
 ####################################################################################
@@ -203,7 +254,73 @@ corr.func <- function(x, y, method = "pearson", cores = 6) {
   # # r <- as.numeric(cor.test(x,y, method = method)$estimate)
   # # p.val <- as.numeric(cor.test(x,y, method = method)$p.value)
 }
+####################################################################################
+####################################################################################
+
+### x is your data.frame of covariates, y is the "trait"
+### that you want to residualize
+### the values returned are Z-statistics that indicate how
+### significant a departure from the model each observation is;
+### these are analogous to and somewhat correlated with the 
+### residuals, but they do a more rigorous job of taking
+### the various forms of uncertainty into account
+z_from_lm = function(y,x){ 
+  df = data.frame(x,y=y) 
+  fit = lm(y~.,data=df)  
+  prd = predict(fit,df,se.fit=T) 
+  z = (df$y-prd$fit)/sqrt(summary(fit)$sigma^2 + prd$se.fit^2) 
+  return(z)
+}
 
 
 
+
+z_from_rf <- function(y,x){ 
+  df <- data.frame(x,y=y) 
+  fit <- randomForest::randomForest(y~.,data=df)  
+  prd <- fit$predicted
+  z <- scale(df$y-prd,T,T)[,1]
+  return(z)
+}
+
+####################################################################################
+####################################################################################
+####################################################################################
+# errorh example
+# ggplot(aes(x=Estimate, y = feature, color = region)) +
+#   geom_point(aes(alpha = sig),  
+#              position = position_dodge(width = 0.6), size =2.5) +
+#   geom_vline(xintercept = 0, linetype = "dashed", linewidth = 0.2, color = "red") +
+#   scale_alpha_manual(values = c(1, 0.5)) +
+#   scale_shape_manual(values = c(1, 2)) + 
+#   geom_errorbarh(aes(xmin = confin_min, xmax = confin_max, 
+#                      alpha = sig), 
+#                  linewidth = 0.8, height = 0, show.legend = F, 
+#                  position = position_dodge(width = 0.6)) +
+#   scale_color_manual(values = six.colors) +
+#   ggh4x::facet_grid2(cols = vars(x), 
+#                      # rows = vars(feature),
+#                      scales = "free") +
+#   labs(caption = paste0("n(samples): ", length(unique(tt7$te_id)))) +
+#   theme_linedraw() +
+#   theme(strip.background = element_rect(fill = "white", color = "white"),
+#         strip.text = element_text(color = "black"),
+#         legend.position = "bottom",
+#         legend.box = "vertical",
+#         plot.caption = element_text(hjust = 0))
+
+estimate.plot <- function(df = df) {
+  df %>%
+    ggplot(aes(x=x,y=y,alpha=sig)) +
+    geom_point(position = position_dodge(width = 0.6), size =2.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", linewidth = 0.2, color = "red") +
+    geom_errorbarh(aes(xmin = confin_min, xmax = confin_max),
+                   linewidth = 0.8, height = 0, show.legend = F,
+                   position = position_dodge(width = 0.6)) +
+    labs(x="Estimate", y="")
+}
+
+####################################################################################
+####################################################################################
+####################################################################################
 
