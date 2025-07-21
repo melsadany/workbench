@@ -236,6 +236,7 @@ redblack.col.gradient <- function(label="ρ"){scale_fill_gradient2(low = redblac
 null_labs <- labs(x="",y="")
 ####################################################################################
 ## log axes in ggplot
+library(scales)
 log10.axes <- scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
                             labels = trans_format("log10", math_format(10^.x))) +
   scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
