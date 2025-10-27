@@ -1,31 +1,18 @@
 ####################################################################################
 #                            main source file for Muhammad                         #
 ####################################################################################
-
-device <- ifelse(any(grepl("LSS", system("ls ~", intern = T))), "IDAS", "argon")
-source(paste0(ifelse(device == "IDAS", "~/LSS", "/Dedicated"),
+device <- ifelse(any(grepl("LSS", system("ls ~", intern = T))), "IDAS", ifelse(any(grepl("iCloud", system("ls ~", intern = T))),"me","argon"))
+source(paste0(ifelse(device == "IDAS", "~/LSS", ifelse(device == "argon","/Dedicated","/Volumes")),
               "/jmichaelson-wdata/msmuhammad/workbench/customized-functions/correct_path.R"))
-
-# library(lifecycle, lib.loc = "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/test2/lib/R/library")
-set.seed(123)
+# set.seed(123)
 library(tidyverse)
 library(data.table)
 library(ggplot2)
-
-# library(ggpubr, lib.loc= "/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/tximpute/lib/R/library")
 library(RColorBrewer)
-
-
 lib.location <- correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/miniconda3/envs/tximpute/lib/R/library")
-# library(ggstatsplot, lib.loc = lib.location)
-# library(Hmisc, lib.loc = lib.location)
 library(lubridate)
-# library(ggpubr, lib.loc = lib.location)
-# library(ggh4x, lib.loc = lib.location)
-# library(ggrepel, lib.loc = lib.location)
 library(foreach)
 library(doMC)
-# library(ggExtra)
 hash.sep <- "#######################################################################################"
 
 my_theme=theme_minimal() +
@@ -101,6 +88,7 @@ boxplot.colors <- c("#aaf0d1", "#b39eb5")
 build.directory <- "mkdir -p archive; mkdir -p logs; mkdir -p figs"
 redblu.col <-  c("#ff6961", "#89cff0")
 redblu.col.2 <- c("#ff4600","#4782b4")
+palette.1 <- c("#ff4600","#4782b4", "#39C08F","#C1624A","#88ADE1", "#627899","#F3B199","#55433C","#A6665F","#00C0C5","#3C4856","#AE6885","#783753")
 redblack.col <- c("#800000", "black")
 six.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", "#73937e")
 ten.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", 
@@ -162,7 +150,7 @@ not_all_na <- function(x) any(!is.na(x))
 not_any_na <- function(x) all(!is.na(x))
 
 ####################################################################################
-ggsave2 <- function(file, bg = "white", width = 8, height = 8, units = "in", dpi = 360) {
+ggsave2 <- function(file, width = 8, height = 8, bg = "white", units = "in", dpi = 360) {
   ggsave(filename = file, bg = bg,
          width = width, height = height, units = units, dpi = dpi)
 }
@@ -236,14 +224,21 @@ redblack.col.gradient <- function(label="ρ"){scale_fill_gradient2(low = redblac
 null_labs <- labs(x="",y="")
 ####################################################################################
 ## log axes in ggplot
-library(scales)
-log10.axes <- scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
-                            labels = trans_format("log10", math_format(10^.x))) +
-  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
-                labels = trans_format("log10", math_format(10^.x))) +
-  annotation_logticks()
+# library(scales)
+# log10.axes <- scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+#                             labels = trans_format("log10", math_format(10^.x))) +
+#   scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+#                 labels = trans_format("log10", math_format(10^.x))) +
+#   annotation_logticks()
 ####################################################################################
 rho <- "ρ"
+small.circle <- "◦"
+big.circle <- "○"
+double.circle <- "⊚"
+less.equal <- "≤"
+more.equal <- "≥"
+up.triangle="∆"
+down.triangle="∇"
 ####################################################################################
 corr.func <- function(x, y, method = "pearson", cores = 6) {
   registerDoMC(cores = cores)
@@ -336,6 +331,12 @@ estimate.plot <- function(df = df) {
     labs(x="Estimate", y="")
 }
 
+ci_ribbon <- function(col=redblu.col.2[2],alpha=0.3,linetype=2,stat="smooth",
+                      method="lm",show.legend=T,...){
+  geom_ribbon(stat = stat, method = method, 
+              aes(ymin = ..ymin.., ymax = ..ymax..),
+              fill = NA, alpha = alpha, linetype = linetype,show.legend=show.legend,...)
+}
 ####################################################################################
 archetypes_summ <- function(obj, k, points_labels) {
   ss <- simplexplot(obj)
@@ -393,17 +394,17 @@ coefs_table <- function(model, lmer = F) {
     jtools::summ(model, pval = T, confin=T)$coeftable %>%
       as.data.frame() %>%
       rownames_to_column("x") %>%
-      rename("Estimate" = `Est.`,
+      dplyr::rename("Estimate" = `Est.`,
              confin_min = `2.5%`,
              confin_max = `97.5%`,
              pval = `p`)
   } else if(lmer) {
     summary(model)$coefficients %>% as.data.frame() %>%
       rownames_to_column("x") %>% 
-      rename(Estimate = 2, pval = 6) %>% 
+      dplyr::rename(Estimate = 2, pval = 6) %>% 
       inner_join(as.data.frame(confint(model)) %>% rownames_to_column("x") %>% 
                    rename(confin_min=2,confin_max=3)) %>%
-      select(x,Estimate, pval, confin_min,confin_max)
+      dplyr::select(x,Estimate, pval, confin_min,confin_max)
   }
 }
 ####################################################################################
@@ -416,6 +417,72 @@ fisher_table <- function(x, y) {
              conf_max = as.numeric(tt$conf.int[2]))
 }
 
+####################################################################################
+####################################################################################
+img_ME <- function(mat,xlab="",ylab="",do.breaks=T,breaks,axes,
+                   cex_row = 0.5,cex_col = 0.5,
+                   main = "Heatmap",...) {
+  
+  if (!is.matrix(mat)) stop("Input must be a matrix.")
+  if (is.null(rownames(mat))) rownames(mat) <- paste0("Row", 1:nrow(mat))
+  if (is.null(colnames(mat))) colnames(mat) <- paste0("Col", 1:ncol(mat))
+  if(missing(axes)) axes=F
+  cc = colorRampPalette(c("royalblue","royalblue4","black","orangered","goldenrod1"))
+  if(all(mat>=0) & missing(breaks)){
+    cc = colorRampPalette(c("black","chartreuse"))
+  }
+  
+  # Plot
+  if(do.breaks & missing(breaks)){
+    mx = max(abs(mat))
+    qt = max(abs(quantile(mat,c(0.01,0.99))))
+    bk = c(-1*mx,seq(-1*qt,qt,length.out=255),mx)
+    image(0:ncol(mat),0:nrow(mat),t(mat),ylim=c(nrow(mat),0),ylab=ylab,
+          xlab=xlab,axes=axes,col=cc(256),breaks=bk,...)
+  }else{
+    image(0:ncol(mat),0:nrow(mat),t(mat),ylim=c(nrow(mat),0),ylab=ylab,
+          xlab=xlab,axes=axes,col=cc(256),breaks=breaks,...)
+  }
+  box()
+  # Add names
+  mtext(colnames(mat), 1, at = (1:ncol(mat))-0.5, las = 2, line=0.5,cex = cex_col)
+  mtext(rownames(mat), 2, at = (1:nrow(mat))-0.5, las = 2, line=0.5,cex = cex_row)
+}
+
+## jake's img
+img_JM = function(x,ylab,xlab,axes,col,na.zero=F,breaks,do.breaks=T,do.labels=T,...){
+  cc = colorRampPalette(c("royalblue","royalblue4","black","orangered","goldenrod1"))
+  if(all(x>=0) & missing(breaks)){
+    cc = colorRampPalette(c("black","chartreuse"))
+  }
+  if(missing(ylab)) ylab=""
+  if(missing(xlab)) xlab=""
+  if(missing(axes)) axes=F
+  if(missing(col)) col=cc(256)
+  if(na.zero) x[is.na(x)] = 0
+  if(do.breaks & missing(breaks)){
+    mx = max(abs(x))
+    qt = max(abs(quantile(x,c(0.01,0.99))))
+    bk = c(-1*mx,seq(-1*qt,qt,length.out=255),mx)
+    image(0:ncol(x),0:nrow(x),t(x),ylim=c(nrow(x),0),ylab=ylab,
+          xlab=xlab,axes=axes,col=col,breaks=bk,...)
+  }else{
+    image(0:ncol(x),0:nrow(x),t(x),ylim=c(nrow(x),0),ylab=ylab,
+          xlab=xlab,axes=axes,col=col,breaks=breaks,...)
+  }
+  box()
+  if(!is.null(rownames(x)) & do.labels){
+    mtext(rownames(x),side=2,at=(1:nrow(x))-0.5,las=2,line=0.5,cex=0.5)
+  }
+  if(!is.null(colnames(x)) & do.labels){
+    mtext(colnames(x),side=1,at=(1:ncol(x))-0.5,las=2,line=0.5,cex=0.5)
+  }
+  
+}
+
+####################################################################################
+####################################################################################
+####################################################################################
 ####################################################################################
 ####################################################################################
 ####################################################################################
