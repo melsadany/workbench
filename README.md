@@ -2,9 +2,9 @@
 
 A collection of R, Bash, and other scripts for various data science tasks including file conversion, polygenic risk scoring, visualization, and statistical analysis.
 
-## 📁 Categories
+## Categories
 
-### 🔄 File Conversion
+### File Conversion
 - Format conversion between nifti to data frame in R.
 - Genomics file format handlers
 - Data preprocessing utilities
@@ -43,7 +43,7 @@ A collection of R, Bash, and other scripts for various data science tasks includ
 
 ### Prerequisites
 - R (version 4.1+)
-- Common R packages (see below)
+- Common R packages (see msmuhammad-source.R)
 - Bash shell
 
 ### Installation
