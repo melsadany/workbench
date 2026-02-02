@@ -53,7 +53,13 @@ theme_set(theme_minimal() +
                   plot.title = element_text(size = 10),
                   plot.subtitle = element_text(size = 8),
                   title = element_text(face = "bold", size = 10),
-                  plot.caption = element_text(hjust = 0)
+                  plot.caption = element_text(hjust = 0),
+                  panel.background = element_rect(fill='transparent',color=NA),
+                  plot.background = element_rect(fill='transparent', color=NA),
+                  panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  legend.background = element_rect(fill='transparent',color=NA),
+                  legend.box.background = element_rect(fill='transparent',color=NA)
             ))
 my.guides <- guides(fill = guide_colorbar(barwidth = 6, barheight = 0.5),
                     color = guide_colorbar(barwidth = 6, barheight = 0.5))
@@ -89,6 +95,8 @@ build.directory <- "mkdir -p archive; mkdir -p logs; mkdir -p figs"
 redblu.col <-  c("#ff6961", "#89cff0")
 redblu.col.2 <- c("#ff4600","#4782b4")
 palette.1 <- c("#ff4600","#4782b4", "#39C08F","#C1624A","#88ADE1", "#627899","#F3B199","#55433C","#A6665F","#00C0C5","#3C4856","#AE6885","#783753")
+palette.2 <- c("#F26419","#2F4858","#F6AE2D","#33658A","#86BBD8")
+
 redblack.col <- c("#800000", "black")
 six.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", "#73937e")
 ten.colors <- c("#800000", "#cc7277", "#4f6162", "#e65236", "#56483a", 
@@ -151,9 +159,15 @@ not_any_na <- function(x) all(!is.na(x))
 
 ####################################################################################
 ggsave2 <- function(file, width = 8, height = 8, bg = "white", units = "in", dpi = 360) {
-  ggsave(filename = file, bg = bg,
+  ggsave(filename = file, bg = bg,limitsize = F,
          width = width, height = height, units = units, dpi = dpi)
 }
+transparent.theme <- theme(panel.background = element_rect(fill='transparent',color=NA),
+                           plot.background = element_rect(fill='transparent', color=NA),
+                           panel.grid.major = element_blank(),
+                           panel.grid.minor = element_blank(),
+                           legend.background = element_rect(fill='transparent',color=NA),
+                           legend.box.background = element_rect(fill='transparent',color=NA))
 ####################################################################################
 pload <- function(fname,envir=.GlobalEnv){
   con <- pipe(paste(correct_path("/Dedicated/jmichaelson-wdata/msmuhammad/workbench/pixz")," -d <",fname),"rb")
@@ -204,8 +218,8 @@ cosine_similarity <- function(x, y) {
 }
 ####################################################################################
 # create a function to compute correlation and return a tidy table with r and pval
-corr.table <- function(x, y, method = "pearson") {
-  corr <- Hmisc::rcorr(x%>%as.matrix(),y%>%as.matrix(), type = method)
+corr.table <- function(x, method = "pearson") {
+  corr <- Hmisc::rcorr(x%>%as.matrix(), type = method)
   p.r <- corr$r %>%
     as.data.frame() %>%
     rownames_to_column("V1") %>%
@@ -214,7 +228,7 @@ corr.table <- function(x, y, method = "pearson") {
     as.data.frame() %>%
     rownames_to_column("V1") %>%
     pivot_longer(cols = colnames(corr$P), names_to = "V2", values_to = "pval")
-  p.ready <- inner_join(p.r, p.pval)
+  p.ready <- inner_join(p.r, p.pval) %>% mutate(FDR = p.adjust(pval,"fdr")) %>% filter(V1!=V2)
   return(p.ready)
 }
 # ggplot tiles
@@ -239,6 +253,8 @@ less.equal <- "≤"
 more.equal <- "≥"
 up.triangle="∆"
 down.triangle="∇"
+beta <- "β"
+checkmark <- "✔"
 ####################################################################################
 corr.func <- function(x, y, method = "pearson", cores = 6) {
   registerDoMC(cores = cores)
@@ -253,7 +269,7 @@ corr.func <- function(x, y, method = "pearson", cores = 6) {
       return(data.frame(r = r, pval = p.val, V2 = sname))
     }
     return(a2 %>% mutate(V1 = tname))
-  }
+  } %>% mutate(FDR = p.adjust(pval,"fdr")) %>% filter(V1!=V2)
   # do.call(rbind, apply(x, MARGIN = 2,function(t) {
   #   do.call(rbind, apply(y, MARGIN = 2, function(s) {
   #     r <- as.numeric(cor.test(as.matrix(t),as.matrix(s), method = method)$estimate)
@@ -331,12 +347,10 @@ estimate.plot <- function(df = df) {
     labs(x="Estimate", y="")
 }
 
-ci_ribbon <- function(col=redblu.col.2[2],alpha=0.3,linetype=2,stat="smooth",
-                      method="lm",show.legend=T,...){
-  geom_ribbon(stat = stat, method = method, 
-              aes(ymin = ..ymin.., ymax = ..ymax..),
-              fill = NA, alpha = alpha, linetype = linetype,show.legend=show.legend,...)
-}
+ci_ribbon1 <- geom_ribbon(stat="smooth",method="lm",aes(ymin = after_stat(ymin), ymax = after_stat(ymax)),
+                          fill = NA, alpha = 1, linetype = 2,show.legend=F,col=redblu.col.2[2])
+ci_ribbon.multi <- geom_ribbon(stat="smooth",method="lm",aes(ymin = after_stat(ymin), ymax = after_stat(ymax)),
+                          fill = NA, alpha = 1, linetype = 2,show.legend=F)
 ####################################################################################
 archetypes_summ <- function(obj, k, points_labels) {
   ss <- simplexplot(obj)
@@ -388,24 +402,25 @@ remove_outliers_iqr <- function(df, column) {
 
 ####################################################################################
 ####################################################################################
-coefs_table <- function(model, lmer = F) {
+coefs_table <- function(model) {
   require(jtools)
-  if(!lmer) {
-    jtools::summ(model, pval = T, confin=T)$coeftable %>%
-      as.data.frame() %>%
-      rownames_to_column("x") %>%
-      dplyr::rename("Estimate" = `Est.`,
-             confin_min = `2.5%`,
-             confin_max = `97.5%`,
-             pval = `p`)
-  } else if(lmer) {
-    summary(model)$coefficients %>% as.data.frame() %>%
-      rownames_to_column("x") %>% 
-      dplyr::rename(Estimate = 2, pval = 6) %>% 
-      inner_join(as.data.frame(confint(model)) %>% rownames_to_column("x") %>% 
-                   rename(confin_min=2,confin_max=3)) %>%
-      dplyr::select(x,Estimate, pval, confin_min,confin_max)
-  }
+  
+  jtools::summ(model, pval = T, confin=T)$coeftable %>%
+    as.data.frame() %>%
+    rownames_to_column("x") %>%
+    dplyr::rename("Estimate" = `Est.`,
+                  confin_min = `2.5%`,
+                  confin_max = `97.5%`,
+                  pval = `p`)
+  # if(!lmer) {
+  #   
+  # } else if(lmer) {
+  #   summary(model)$coefficients %>% as.data.frame() %>%
+  #     rownames_to_column("x") %>% 
+  #     dplyr::rename(Estimate = 2, pval = 6) %>% 
+  #     mutate(confin_min = Estimate-`Std. Error`,confin_max = Estimate+`Std. Error`) %>%
+  #     dplyr::select(x,Estimate, pval, confin_min,confin_max)
+  # }
 }
 ####################################################################################
 ####################################################################################
@@ -484,8 +499,49 @@ img_JM = function(x,ylab,xlab,axes,col,na.zero=F,breaks,do.breaks=T,do.labels=T,
 ####################################################################################
 ####################################################################################
 ####################################################################################
+## outliers and PCs
+identify_outliers_per_column <- function(df){
+  return(do.call(cbind,lapply(df, function(x) ((x>=quantile(x,0.25) - 1.5 * IQR(x))&
+                                                 (x>=quantile(x,0.75) + 1.5 * IQR(x))))))
+}
+pca_wo_outliers <- function(df, max_outlier_per_feature=NULL,max_outlier_features_per_row=NULL){
+  df.outliers <- identify_outliers_per_column(df)
+  if(is.null(max_outlier_per_feature)){max_outlier_per_feature=round(0.05*nrow(df))}
+  if(is.null(max_outlier_features_per_row)){max_outlier_features_per_row=round(0.05*ncol(df))}
+  
+  feat.out.count <- colSums(df.outliers) %>% as.data.frame() %>% 
+    rownames_to_column("feature") %>% rename(count=2) %>%
+    mutate(print=paste("feature", feature, "has\t\t", count, "outliers"))
+  row.out.count <- rowSums(df.outliers) %>% as.data.frame() %>% 
+    rownames_to_column("row") %>% rename(count=2) %>%
+    mutate(print=paste("row",row, "has\t\t", count, "outliers"))
+  
+  cat(paste0(hash.sep,"\n",paste(feat.out.count$print[feat.out.count$count>0],collapse ="\n"),"\n",hash.sep,"\n"))
+  cat(paste0(hash.sep,"\n",paste(row.out.count$print[row.out.count$count>0],collapse ="\n"),"\n",hash.sep,"\n"))
+  cat(paste0("\n", hash.sep,"\n",
+             "dropping ", sum(feat.out.count$count>max_outlier_per_feature), " features with >", max_outlier_per_feature, " outliers","\n",
+             "dropping ", sum(row.out.count$count>max_outlier_features_per_row)," rows identified as an outlier in >", max_outlier_features_per_row, " features","\n",
+             hash.sep,"\n"))
+  
+  df.clean <- df[!((rowSums(df.outliers))>max_outlier_features_per_row),!((colSums(df.outliers))>max_outlier_per_feature)]
+  df.pc <- prcomp(scale(df.clean))
+  df.pc.pred <- predict(df.pc, scale(df))
+  return(list("prcomp_obj"=df.pc, "pred_PCs"=df.pc.pred))
+}
+
 ####################################################################################
 ####################################################################################
+####################################################################################
+## dark slides theme
+dark.slides.theme <- theme(panel.background = element_rect(fill = "#272D32"),
+                           plot.background = element_rect(fill = "#272D32"),
+                           panel.border = element_rect(color = "white"),
+                           axis.ticks = element_line(color = "white"),
+                           text = element_text(color = "white"),
+                           axis.text = element_text(color = "white"))
+dark.slides.palette <- c("#272D32","#CC377C","#B7E3DB","#1D4A42","#E087B0","#698C8F","#35594F","#75AD9D",
+                         "#C77C40","#DDB08C","#6D974B","#A7C68D","#7E375E","#C376A0","#72553F","#B8977E",
+                         "#516271","#0B1E1A")
 ####################################################################################
 ####################################################################################
 

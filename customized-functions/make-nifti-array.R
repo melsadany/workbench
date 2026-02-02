@@ -62,3 +62,74 @@ make_img_array <- function(file, dim = 3, labels = NULL) {
     return(xyzzy_wide)
   }
 }
+################################################################################
+################################################################################
+################################################################################
+## version 2 of the function
+library(RNifti)
+
+make_img_array_V2 <- function(nifti_path,
+                              drop_zero = TRUE,
+                              drop_na   = TRUE) {
+  img <- readNifti(nifti_path)  # works for 3D or 4D [web:35]
+  dim_img <- dim(img)
+  
+  if (length(dim_img) < 3L || length(dim_img) > 4L) {
+    stop("Only 3D or 4D NIfTI images are supported.")
+  }
+  
+  nx <- dim_img[1]
+  ny <- dim_img[2]
+  nz <- dim_img[3]
+  nt <- if (length(dim_img) == 4L) dim_img[4] else 1L
+  
+  # Voxel indices (1-based, as RNifti expects) [web:11]
+  idx3 <- as.matrix(expand.grid(
+    x = seq_len(nx),
+    y = seq_len(ny),
+    z = seq_len(nz)
+  ))
+  
+  # MNI coords for spatial voxels only (independent of time)
+  mni_coords <- voxelToWorld(idx3, img)  # uses image xform [web:11]
+  
+  # Repeat for each time/volume
+  idx_list <- vector("list", nt)
+  val_list <- vector("list", nt)
+  
+  for (t in seq_len(nt)) {
+    if (nt == 1L) {
+      vol <- img
+    } else {
+      vol <- img[,,, t, drop = FALSE]  # 3D slice of 4D image [web:15]
+    }
+    
+    vals <- as.vector(vol)
+    
+    keep <- rep(TRUE, length(vals))
+    if (drop_zero) keep <- keep & (vals != 0)
+    if (drop_na)   keep <- keep & !is.na(vals)
+    
+    # Subset 3D indices and MNI coords with same mask
+    idx_keep <- idx3[keep, , drop = FALSE]
+    mni_keep <- mni_coords[keep, , drop = FALSE]
+    
+    idx_list[[t]] <- data.frame(
+      x      = idx_keep[, 1],
+      y      = idx_keep[, 2],
+      z      = idx_keep[, 3],
+      mni_x  = mni_keep[, 1],
+      mni_y  = mni_keep[, 2],
+      mni_z  = mni_keep[, 3],
+      t_vol  = t,
+      intensity = vals[keep]
+    )
+  }
+  
+  df <- do.call(rbind, idx_list)
+  rownames(df) <- NULL
+  df
+}
+
+
+
